@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gamebooks-client"
+version = "0.1.0"
+description = "Python client and parser for gamebooks.org"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "beautifulsoup4==4.12.3",
+  "requests==2.32.3",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==8.3.5",
+]
+
+[project.scripts]
+gamebooks-cli = "gamebooks_client.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["gamebooks_client*"]
