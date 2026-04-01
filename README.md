@@ -1,6 +1,6 @@
-# Python Gamebook Tracker
+# TurnToPage - A Gamebook Collectors Tool
 
-Python migration scaffold for pulling and parsing data from https://gamebooks.org.
+TurnToPage is a Python app for pulling and parsing collector data from https://gamebooks.org.
 
 ## What This Includes
 

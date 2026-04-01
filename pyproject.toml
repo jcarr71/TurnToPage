@@ -3,9 +3,9 @@ requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "gamebooks-client"
+name = "turntopage"
 version = "0.1.0"
-description = "Python client and parser for gamebooks.org"
+description = "TurnToPage - A Gamebook Collectors Tool"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -19,7 +19,7 @@ dev = [
 ]
 
 [project.scripts]
-gamebooks-cli = "gamebooks_client.cli:main"
+turntopage = "gamebooks_client.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

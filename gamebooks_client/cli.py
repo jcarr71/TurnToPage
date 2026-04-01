@@ -9,7 +9,7 @@ from .models import GamebookBook
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="CLI for querying gamebooks.org")
+    parser = argparse.ArgumentParser(description="TurnToPage - A Gamebook Collectors Tool")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     search_parser = subparsers.add_parser("search", help="Search books by title")
