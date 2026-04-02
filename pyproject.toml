@@ -17,9 +17,13 @@ dependencies = [
 dev = [
   "pytest==8.3.5",
 ]
+images = [
+  "Pillow>=10.0",
+]
 
 [project.scripts]
 turntopage = "gamebooks_client.cli:main"
+turntopage-gui = "gamebooks_client.gui:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

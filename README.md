@@ -26,7 +26,33 @@ pytest
 python -m gamebooks_client.cli search "lone wolf"
 python -m gamebooks_client.cli item 456
 python -m gamebooks_client.cli series 789
+python -m gamebooks_client.cli mark 456 have --title "Flight from the Dark"
+python -m gamebooks_client.cli mark 457 missing
+python -m gamebooks_client.cli collection
+python -m gamebooks_client.cli series-status 789
 ```
+
+## Local Collection Tracking
+
+TurnToPage now stores your collection state in a local SQLite file so you can track:
+
+- `have`: books you already own
+- `missing`: books you still need to find
+- `want`: wishlist items
+
+All tracking commands accept `--db-path` if you want a custom database location.
+
+Examples:
+
+```bash
+python -m gamebooks_client.cli --db-path my_collection.db mark 123 have
+python -m gamebooks_client.cli mark 124 missing
+python -m gamebooks_client.cli collection --status missing
+python -m gamebooks_client.cli unmark 124
+python -m gamebooks_client.cli series-status 789
+```
+
+`series-status` compares books in a gamebooks.org series with your local database and returns each title with `have`, `missing`, `want`, or `unknown`.
 
 ## Move To New Repo
 
