@@ -4,11 +4,69 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
 
+GAMEBOOKS_BASE_URL = "https://gamebooks.org"
+
+
 @dataclass(frozen=True)
 class GamebookBook:
     title: str
     url: str
     item_id: Optional[int]
+
+
+@dataclass(frozen=True)
+class CatalogBook:
+    item_id: int
+    title: str
+    material_type_id: Optional[int] = None
+    material_type_name: Optional[str] = None
+    description: Optional[str] = None
+    errata: Optional[str] = None
+    thanks: Optional[str] = None
+    alt_titles: List[str] = field(default_factory=list)
+    creators: List["CatalogCreator"] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class CatalogSeries:
+    series_id: int
+    title: str
+    description: Optional[str] = None
+    alt_titles: List[str] = field(default_factory=list)
+    files: List["CatalogFile"] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class CatalogSeriesEntry:
+    series_id: int
+    item_id: int
+    title: str
+
+
+@dataclass(frozen=True)
+class CatalogCreator:
+    person_id: int
+    name: str
+    role_id: Optional[int] = None
+    role_name: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class CatalogFile:
+    file_id: int
+    name: Optional[str]
+    path: Optional[str]
+    url: Optional[str] = None
+    description: Optional[str] = None
+    file_type_id: Optional[int] = None
+    file_type_name: Optional[str] = None
+
+    @property
+    def is_image(self) -> bool:
+        if not self.path:
+            return False
+        lower_path = self.path.lower()
+        return lower_path.endswith((".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".tif", ".tiff"))
 
 
 @dataclass(frozen=True)

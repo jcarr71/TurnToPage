@@ -8,11 +8,10 @@ __pycache__/
 venv/
 .env
 .DS_Store
-
-# Build and packaging outputs
 build/
 dist/
 *.egg-info/
 
 # Local runtime data
 *.db
+database/gamebooks.sqlite

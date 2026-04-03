@@ -3,12 +3,17 @@ from __future__ import annotations
 import argparse
 import json
 from dataclasses import asdict
+from pathlib import Path
+import shutil
 
 from .api import GamebooksApi
-from .catalog import CatalogStore
+from .catalog import compare_dump_to_catalog, import_dump_to_sqlite, open_catalog
 from .collection import CollectionStore, VALID_STATUSES
-from .crawler import crawl_catalog
 from .models import GamebookBook
+
+
+DEFAULT_DUMP_PATH = Path(__file__).resolve().parents[1] / "database" / "gamebooks.sql"
+DEFAULT_SQLITE_PATH = Path(__file__).resolve().parents[1] / "database" / "gamebooks.sqlite"
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -52,44 +57,66 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     series_status_parser.add_argument("series_id", type=int, help="Series ID from gamebooks.org")
 
-    crawl_parser = subparsers.add_parser(
-        "crawl",
-        help="Crawl gamebooks.org item/series pages into a local catalog database",
+    catalog_books_parser = subparsers.add_parser("catalog-books", help="List books from the local SQL dump")
+    catalog_books_parser.add_argument("--limit", type=int, default=20, help="Number of books to return")
+    catalog_books_parser.add_argument("--offset", type=int, default=0, help="Number of books to skip")
+    catalog_books_parser.add_argument("--database-path", default=str(DEFAULT_DUMP_PATH), help="Path to gamebooks.sql")
+    catalog_books_parser.add_argument("--sqlite-path", default=str(DEFAULT_SQLITE_PATH), help="Path to gamebooks.sqlite")
+
+    catalog_search_parser = subparsers.add_parser("catalog-search", help="Search books in the local SQL dump")
+    catalog_search_parser.add_argument("query", help="Search text")
+    catalog_search_parser.add_argument("--limit", type=int, default=20, help="Number of books to return")
+    catalog_search_parser.add_argument("--database-path", default=str(DEFAULT_DUMP_PATH), help="Path to gamebooks.sql")
+    catalog_search_parser.add_argument("--sqlite-path", default=str(DEFAULT_SQLITE_PATH), help="Path to gamebooks.sqlite")
+
+    catalog_item_parser = subparsers.add_parser("catalog-item", help="Fetch a book from the local SQL dump by ID")
+    catalog_item_parser.add_argument("item_id", type=int, help="Item ID from the SQL dump")
+    catalog_item_parser.add_argument("--database-path", default=str(DEFAULT_DUMP_PATH), help="Path to gamebooks.sql")
+    catalog_item_parser.add_argument("--sqlite-path", default=str(DEFAULT_SQLITE_PATH), help="Path to gamebooks.sqlite")
+
+    catalog_files_parser = subparsers.add_parser("catalog-files", help="Fetch linked files for a book from the local catalog")
+    catalog_files_parser.add_argument("item_id", type=int, help="Item ID from the local catalog")
+    catalog_files_parser.add_argument("--images-only", action="store_true", help="Only return image file links")
+    catalog_files_parser.add_argument("--database-path", default=str(DEFAULT_DUMP_PATH), help="Path to gamebooks.sql")
+    catalog_files_parser.add_argument("--sqlite-path", default=str(DEFAULT_SQLITE_PATH), help="Path to gamebooks.sqlite")
+
+    catalog_series_parser = subparsers.add_parser("catalog-series", help="Fetch series and its books from the local SQL dump")
+    catalog_series_parser.add_argument("series_id", type=int, help="Series ID from the SQL dump")
+    catalog_series_parser.add_argument("--limit", type=int, default=20, help="Number of books to return")
+    catalog_series_parser.add_argument("--database-path", default=str(DEFAULT_DUMP_PATH), help="Path to gamebooks.sql")
+    catalog_series_parser.add_argument("--sqlite-path", default=str(DEFAULT_SQLITE_PATH), help="Path to gamebooks.sqlite")
+
+    catalog_series_search_parser = subparsers.add_parser(
+        "catalog-series-search",
+        help="Search series titles and alternate titles from the local catalog",
     )
-    crawl_parser.add_argument(
-        "--catalog-db-path",
-        default="turntopage_catalog.db",
-        help="Path to local SQLite catalog database (default: turntopage_catalog.db)",
-    )
-    crawl_parser.add_argument(
-        "--scope",
-        choices=["both", "items", "series"],
-        default="both",
-        help="Which IDs to crawl (default: both)",
-    )
-    crawl_parser.add_argument("--start-item", type=int, default=1, help="Starting item ID (default: 1)")
-    crawl_parser.add_argument("--start-series", type=int, default=1, help="Starting series ID (default: 1)")
-    crawl_parser.add_argument("--max-item-id", type=int, help="Optional maximum item ID to crawl")
-    crawl_parser.add_argument("--max-series-id", type=int, help="Optional maximum series ID to crawl")
-    crawl_parser.add_argument(
-        "--delay-seconds",
-        type=float,
-        default=1.0,
-        help="Delay between requests in seconds (default: 1.0)",
-    )
-    crawl_parser.add_argument(
-        "--max-miss-streak",
-        type=int,
-        default=500,
-        help="Stop after this many consecutive 404s (default: 500)",
-    )
-    crawl_parser.add_argument(
-        "--no-resume",
+    catalog_series_search_parser.add_argument("query", help="Search text")
+    catalog_series_search_parser.add_argument("--limit", type=int, default=20, help="Number of series to return")
+    catalog_series_search_parser.add_argument("--database-path", default=str(DEFAULT_DUMP_PATH), help="Path to gamebooks.sql")
+    catalog_series_search_parser.add_argument("--sqlite-path", default=str(DEFAULT_SQLITE_PATH), help="Path to gamebooks.sqlite")
+
+    catalog_import_parser = subparsers.add_parser("catalog-import", help="Import a SQL dump into the local SQLite catalog")
+    catalog_import_parser.add_argument("--dump-path", default=str(DEFAULT_DUMP_PATH), help="Path to the source SQL dump")
+    catalog_import_parser.add_argument("--sqlite-path", default=str(DEFAULT_SQLITE_PATH), help="Path to gamebooks.sqlite")
+    catalog_import_parser.add_argument(
+        "--replace-master-dump",
         action="store_true",
-        help="Ignore saved crawl checkpoints and start from --start-item/--start-series",
+        help="Copy the provided dump over database/gamebooks.sql before importing",
     )
 
+    catalog_status_parser = subparsers.add_parser("catalog-status", help="Show whether the app is using the SQL dump or SQLite catalog")
+    catalog_status_parser.add_argument("--database-path", default=str(DEFAULT_DUMP_PATH), help="Path to gamebooks.sql")
+    catalog_status_parser.add_argument("--sqlite-path", default=str(DEFAULT_SQLITE_PATH), help="Path to gamebooks.sqlite")
+
+    catalog_check_parser = subparsers.add_parser("catalog-check-dump", help="Compare an incoming dump to the currently imported catalog")
+    catalog_check_parser.add_argument("--dump-path", default=str(DEFAULT_DUMP_PATH), help="Path to the source SQL dump to compare")
+    catalog_check_parser.add_argument("--sqlite-path", default=str(DEFAULT_SQLITE_PATH), help="Path to gamebooks.sqlite")
+
     return parser
+
+
+def _open_catalog(args):
+    return open_catalog(sqlite_path=args.sqlite_path, dump_path=args.database_path)
 
 
 def main() -> None:
@@ -179,26 +206,71 @@ def main() -> None:
             print(json.dumps(response, indent=2))
             return
 
-        if args.command == "crawl":
-            catalog = CatalogStore(args.catalog_db_path)
+        if args.command == "catalog-books":
+            catalog = _open_catalog(args)
+            print(json.dumps([asdict(book) for book in catalog.list_books(limit=args.limit, offset=args.offset)], indent=2))
+            return
 
-            def _progress(message: str) -> None:
-                print(message)
+        if args.command == "catalog-search":
+            catalog = _open_catalog(args)
+            print(json.dumps([asdict(book) for book in catalog.search_books(args.query, limit=args.limit)], indent=2))
+            return
 
-            summary = crawl_catalog(
-                api=api,
-                catalog=catalog,
-                scope=args.scope,
-                start_item=args.start_item,
-                start_series=args.start_series,
-                max_item_id=args.max_item_id,
-                max_series_id=args.max_series_id,
-                delay_seconds=args.delay_seconds,
-                max_miss_streak=args.max_miss_streak,
-                resume=not args.no_resume,
-                progress_cb=_progress,
+        if args.command == "catalog-item":
+            catalog = _open_catalog(args)
+            print(json.dumps(catalog.get_book_payload(args.item_id), indent=2))
+            return
+
+        if args.command == "catalog-files":
+            catalog = _open_catalog(args)
+            print(json.dumps([asdict(file) for file in catalog.get_book_files(args.item_id, images_only=args.images_only)], indent=2))
+            return
+
+        if args.command == "catalog-series":
+            catalog = _open_catalog(args)
+            series = catalog.get_series(args.series_id)
+            payload = {
+                "series": asdict(series) if series is not None else None,
+                "books": [asdict(entry) for entry in catalog.get_series_books(args.series_id, limit=args.limit)],
+            }
+            print(json.dumps(payload, indent=2))
+            return
+
+        if args.command == "catalog-series-search":
+            catalog = _open_catalog(args)
+            print(
+                json.dumps(
+                    [
+                        {
+                            "series_id": series.series_id,
+                            "title": series.title,
+                            "alt_titles": series.alt_titles,
+                        }
+                        for series in catalog.search_series(args.query, limit=args.limit)
+                    ],
+                    indent=2,
+                )
             )
-            print(json.dumps(summary, indent=2))
+            return
+
+        if args.command == "catalog-import":
+            source_dump = Path(args.dump_path)
+            if args.replace_master_dump:
+                DEFAULT_DUMP_PATH.parent.mkdir(parents=True, exist_ok=True)
+                if source_dump.resolve() != DEFAULT_DUMP_PATH.resolve():
+                    shutil.copy2(source_dump, DEFAULT_DUMP_PATH)
+                source_dump = DEFAULT_DUMP_PATH
+            payload = import_dump_to_sqlite(source_dump, args.sqlite_path)
+            print(json.dumps(payload, indent=2))
+            return
+
+        if args.command == "catalog-status":
+            catalog = _open_catalog(args)
+            print(json.dumps(catalog.get_status(), indent=2))
+            return
+
+        if args.command == "catalog-check-dump":
+            print(json.dumps(compare_dump_to_catalog(args.dump_path, args.sqlite_path), indent=2))
             return
     finally:
         api.close()

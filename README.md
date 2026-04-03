@@ -1,22 +1,16 @@
 # TurnToPage - A Gamebook Collectors Tool
 
-TurnToPage is a desktop and CLI app for searching gamebooks.org, tracking your personal collection, and building a local catalog snapshot for faster offline-friendly workflows.
-
-## Project Status
-
-TurnToPage is not production-ready yet.
-
-Development is currently waiting on explicit clearance/permission for data usage and large-scale catalog acquisition. Until that clearance is granted, treat crawling and catalog snapshot features as local development/testing workflows only.
+TurnToPage is a desktop and CLI app for searching gamebooks.org, tracking your personal collection, and working against a local catalog imported from the maintained SQL dump.
 
 ## Features
 
-- Tkinter desktop GUI with tabs for Dashboard, Search, Collection, and Series progress
-- Local collection tracking in SQLite (`have`, `want`, `missing`)
+- Tkinter desktop GUI with Dashboard, Search, Collection, and Series Gap Report tabs
+- Local collection tracking in SQLite with `have`, `want`, and `missing` states
 - Rich item and series parsing from gamebooks.org
-- Series-focused completion tools (missing-only view, bulk updates, progress and suggestions)
-- Saved filter presets for search workflows
-- Resumable crawler that builds a local catalog database
-- CLI for search, detail lookup, collection tracking, and crawling
+- Series-focused completion tools, saved filter presets, bulk updates, and undo support
+- Read-only local catalog access backed by `database/gamebooks.sql` or imported `database/gamebooks.sqlite`
+- SQLite import workflow for faster local catalog queries and dump comparisons
+- Pytest coverage for parsing, catalog import/search, and collection behaviors
 
 ## Quick Start
 
@@ -35,7 +29,7 @@ GUI:
 python launch_gui.py
 ```
 
-CLI entry points (after install):
+CLI entry points after install:
 
 ```bash
 turntopage --help
@@ -75,29 +69,45 @@ Custom collection DB path:
 python -m gamebooks_client.cli --db-path my_collection.db collection
 ```
 
-## Build A Local Catalog Snapshot
-
-The crawler writes to `turntopage_catalog.db` by default and stores checkpoint state so interrupted crawls can resume.
+Catalog workflow:
 
 ```bash
-python -m gamebooks_client.cli crawl --scope both
-python -m gamebooks_client.cli crawl --scope items --start-item 1 --max-item-id 5000
-python -m gamebooks_client.cli crawl --scope series --start-series 1 --max-series-id 2000
+python -m gamebooks_client.cli catalog-import
+python -m gamebooks_client.cli catalog-status
+python -m gamebooks_client.cli catalog-check-dump --dump-path path\to\new_dump.sql
+python -m gamebooks_client.cli catalog-books --limit 10
+python -m gamebooks_client.cli catalog-search "lone wolf"
+python -m gamebooks_client.cli catalog-item 11
+python -m gamebooks_client.cli catalog-files 11 --images-only
+python -m gamebooks_client.cli catalog-series-search "fighting fantasy"
+python -m gamebooks_client.cli catalog-series 111 --limit 10
 ```
 
-Useful options:
+The catalog workflow has two layers:
 
-- `--catalog-db-path`: set custom catalog DB file
-- `--delay-seconds`: request pacing (default `1.0`)
-- `--max-miss-streak`: stop threshold for consecutive 404s
-- `--no-resume`: ignore saved checkpoints and start from provided IDs
+- `database/gamebooks.sql` is the received source dump from the site maintainer.
+- `database/gamebooks.sqlite` is the app's local working catalog, rebuilt from the dump.
+
+Run `python -m gamebooks_client.cli catalog-import` after receiving a new dump. If the maintainer sends a dump file at another path, you can refresh from it with:
+
+```bash
+python -m gamebooks_client.cli catalog-import --dump-path path\to\new_dump.sql --replace-master-dump
+```
+
+Catalog read commands prefer SQLite when `database/gamebooks.sqlite` exists, and fall back to parsing `database/gamebooks.sql` if it does not.
+
+The dump contains file metadata and paths, not embedded image binaries. Those links come from `Files` plus `Items_Files`, and the app imports and exposes them through `catalog-item` and `catalog-files`.
+
+Catalog search checks primary titles, alternate titles, and imported creator names/roles. File records also include full `https://gamebooks.org/...` URLs derived from the relative dump paths.
+
+Series metadata also carries alternate titles and linked files from `Series_AltTitles` and `Series_Files`, so `catalog-series` returns richer series payloads after import.
 
 ## Packaging (Windows EXE)
 
 Build from the existing PyInstaller spec:
 
 ```bash
-python -m PyInstaller TurnToPage.spec
+python -m PyInstaller -y TurnToPage.spec
 ```
 
 Output executable:
@@ -115,8 +125,7 @@ pip install "Pillow>=10.0"
 ## Project Layout
 
 - `gamebooks_client/api.py`: HTTP and parsing layer
+- `gamebooks_client/catalog.py`: local SQL dump and SQLite catalog access
 - `gamebooks_client/collection.py`: local collection store
-- `gamebooks_client/catalog.py`: local catalog store
-- `gamebooks_client/crawler.py`: resumable crawler logic
 - `gamebooks_client/gui.py`: desktop interface
 - `gamebooks_client/cli.py`: command-line interface

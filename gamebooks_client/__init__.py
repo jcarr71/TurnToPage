@@ -1,8 +1,12 @@
+from .catalog import CatalogError, SqlDumpCatalog, SqliteCatalog, compare_dump_to_catalog, import_dump_to_sqlite, open_catalog
 from .api import GamebooksApi, GamebooksApiError
-from .catalog import CatalogStore
 from .collection import CollectionEntry, CollectionStore
-from .crawler import CrawlSummary, crawl_catalog
 from .models import (
+    CatalogBook,
+    CatalogCreator,
+    CatalogFile,
+    CatalogSeries,
+    CatalogSeriesEntry,
     GamebookBook,
     GamebookEdition,
     GamebookItemDetails,
@@ -14,13 +18,16 @@ from .models import (
 from .session import GamebooksSession
 
 __all__ = [
-    "GamebooksApi",
-    "GamebooksApiError",
-    "CatalogStore",
+    "CatalogBook",
+    "CatalogCreator",
+    "CatalogError",
+    "CatalogFile",
+    "CatalogSeries",
+    "CatalogSeriesEntry",
     "CollectionEntry",
     "CollectionStore",
-    "CrawlSummary",
-    "crawl_catalog",
+    "GamebooksApi",
+    "GamebooksApiError",
     "GamebookBook",
     "GamebookEdition",
     "GamebookItemDetails",
@@ -29,4 +36,9 @@ __all__ = [
     "GamebookSeriesDetails",
     "GamebookSeriesItem",
     "GamebooksSession",
+    "SqlDumpCatalog",
+    "SqliteCatalog",
+    "compare_dump_to_catalog",
+    "import_dump_to_sqlite",
+    "open_catalog",
 ]
