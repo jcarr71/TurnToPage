@@ -3,11 +3,13 @@ from __future__ import annotations
 import csv
 import json
 import re
+import sys
 import threading
 import time
 import tkinter as tk
 import webbrowser
 from dataclasses import dataclass
+from pathlib import Path
 from tkinter import filedialog, messagebox, simpledialog, ttk
 from typing import Callable, Dict, List, Optional, Tuple
 
@@ -51,6 +53,11 @@ _FONT  = ("Segoe UI", 10)
 _FONTB = ("Segoe UI", 10, "bold")
 _FONTH = ("Segoe UI", 12, "bold")
 _PAD   = {"padx": 4, "pady": 3}
+
+
+def _resource_path(*parts: str) -> Path:
+    base_path = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[1]))
+    return base_path.joinpath(*parts)
 
 
 @dataclass(frozen=True)
@@ -1941,6 +1948,7 @@ class App(tk.Tk):
         self.title("TurnToPage — Gamebook Collector")
         self.geometry("960x640")
         self.minsize(720, 500)
+        self._window_logo: Optional[tk.PhotoImage] = None
 
         self._api   = GamebooksApi()
         self._store = CollectionStore(db_path)
@@ -1948,8 +1956,19 @@ class App(tk.Tk):
         self._notice_after_id: Optional[str] = None
         self._activity_log: List[str] = []
 
+        self._configure_branding()
         self._setup_styles()
         self._build()
+
+    def _configure_branding(self) -> None:
+        logo_path = _resource_path("images", "logo.png")
+        if not logo_path.exists():
+            return
+        try:
+            self._window_logo = tk.PhotoImage(file=str(logo_path))
+            self.iconphoto(True, self._window_logo)
+        except tk.TclError:
+            self._window_logo = None
 
     def _setup_styles(self) -> None:
         s = ttk.Style()

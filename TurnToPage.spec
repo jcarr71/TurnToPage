@@ -5,7 +5,7 @@ a = Analysis(
     ['launch_gui.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[('images/logo.png', 'images')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
