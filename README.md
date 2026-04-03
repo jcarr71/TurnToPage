@@ -1,6 +1,14 @@
 # TurnToPage - A Gamebook Collectors Tool
 
-TurnToPage is a desktop and CLI app for searching gamebooks.org, tracking your personal collection, and working against a local catalog imported from the maintained SQL dump.
+TurnToPage is a desktop application for searching gamebooks.org, tracking your personal collection, and working against a local catalog imported from the maintained SQL dump. A companion CLI is still included for catalog maintenance, scripted lookups, and collection operations.
+
+## Current Status
+
+- The desktop GUI is the primary supported app entry point.
+- The GUI is the primary user interface for day-to-day searching, tracking, and series review.
+- The CLI remains available for lookup, collection management, and catalog maintenance.
+- The local catalog workflow is based on `database/gamebooks.sql` plus an imported `database/gamebooks.sqlite` working copy.
+- There is one supported Windows packaging path: `TurnToPage.spec` builds `dist/TurnToPage.exe` from `launch_gui.py`.
 
 ## Features
 
@@ -23,17 +31,33 @@ pytest -q
 
 ## Run The App
 
-GUI:
+Primary GUI entry point:
 
 ```bash
 python launch_gui.py
 ```
 
-CLI entry points after install:
+Installed GUI script:
+
+```bash
+turntopage-gui
+```
+
+## GUI Overview
+
+- Dashboard: collection totals, recent activity, quick actions, series progress, and finish-next suggestions
+- Search: live lookup against gamebooks.org with item details and collection actions
+- Collection: browse, filter, and bulk-update tracked books in your local database
+- Series Gap Report: review series completion and identify what is still missing
+
+The GUI is the recommended way to use the project unless you are importing a fresh catalog dump, automating lookups, or doing scripted maintenance.
+
+## CLI And Maintenance
+
+Installed CLI entry point:
 
 ```bash
 turntopage --help
-turntopage-gui
 ```
 
 Or without installing scripts:
@@ -41,6 +65,8 @@ Or without installing scripts:
 ```bash
 python -m gamebooks_client.cli --help
 ```
+
+Use the CLI for catalog import, scripted queries, or collection updates outside the GUI.
 
 ## CLI Commands
 
@@ -104,7 +130,7 @@ Series metadata also carries alternate titles and linked files from `Series_AltT
 
 ## Packaging (Windows EXE)
 
-Build from the existing PyInstaller spec:
+Build from the single supported PyInstaller spec:
 
 ```bash
 python -m PyInstaller -y TurnToPage.spec
@@ -113,6 +139,8 @@ python -m PyInstaller -y TurnToPage.spec
 Output executable:
 
 - `dist/TurnToPage.exe`
+
+Generated packaging output under `build/` and `dist/` is ignored and can be removed/rebuilt at any time.
 
 ## Optional Cover Images
 
