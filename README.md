@@ -1,8 +1,12 @@
 # TurnToPage - A Gamebook Collectors Tool
 
-![TurnToPage logo](images/logo.png)
+TurnToPage is a desktop application for searching gamebooks.org, tracking your personal collection, and working against a local catalog imported from the maintained SQL dump. A companion CLI is still included for catalog maintenance, scripted lookups, and collection operations.
+
+<img src="images/logo_transparent.png" alt="TurnToPage logo" width="240" style="float:left; margin-right:16px; margin-bottom:12px;" />
 
 TurnToPage is a desktop application for searching gamebooks.org, tracking your personal collection, and working against a local catalog imported from the maintained SQL dump. A companion CLI is still included for catalog maintenance, scripted lookups, and collection operations.
+
+<div style="clear:both"></div>
 
 ## Current Status
 
